@@ -312,6 +312,18 @@
                 </div>
             ` : ''}
             
+            <div style="margin-bottom: 16px;">
+                <p style="margin: 0 0 8px 0; font-size: 14px; color: #374151;">
+                    <strong>What happens if you click?</strong>
+                </p>
+                <ul style="margin: 0; padding-left: 18px; color: #4b5563; font-size: 13px; line-height: 1.55;">
+                    <li>Possible device infection from bundled malware or unwanted downloads.</li>
+                    <li>Password theft through fake login prompts or credential harvesting.</li>
+                    <li>Spam notifications and pop-ups that persist even after closing the tab.</li>
+                    <li>Legal or ISP notices caused by policy or copyright violations.</li>
+                </ul>
+            </div>
+            
             <div style="display: flex; gap: 12px; justify-content: flex-end;">
                 <button class="checkurl-stay-safe" style="
                     padding: 8px 16px; background: #dc2626; color: white; border: none; 
