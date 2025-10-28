@@ -1,7 +1,80 @@
 // Fixed popup implementation for the extension
+const extensionAPI = (() => {
+    if (typeof browser !== 'undefined') {
+        return browser;
+    }
+    
+    if (typeof chrome !== 'undefined') {
+        const promisify = (fn, context) => (...args) => {
+            return new Promise((resolve, reject) => {
+                fn.call(context, ...args, (result) => {
+                    const error = chrome.runtime && chrome.runtime.lastError;
+                    if (error) {
+                        reject(new Error(error.message || String(error)));
+                        return;
+                    }
+                    resolve(result);
+                });
+            });
+        };
+        
+        return {
+            runtime: {
+                sendMessage: (...args) => new Promise((resolve, reject) => {
+                    chrome.runtime.sendMessage(...args, (response) => {
+                        const error = chrome.runtime && chrome.runtime.lastError;
+                        if (error) {
+                            reject(new Error(error.message || String(error)));
+                            return;
+                        }
+                        resolve(response);
+                    });
+                }),
+                getURL: chrome.runtime.getURL.bind(chrome.runtime)
+            },
+            tabs: {
+                query: promisify(chrome.tabs.query, chrome.tabs),
+                sendMessage: (tabId, message) => new Promise((resolve, reject) => {
+                    chrome.tabs.sendMessage(tabId, message, (response) => {
+                        const error = chrome.runtime && chrome.runtime.lastError;
+                        if (error) {
+                            reject(new Error(error.message || String(error)));
+                            return;
+                        }
+                        resolve(response);
+                    });
+                })
+            },
+            storage: {
+                local: {
+                    get: promisify(chrome.storage.local.get, chrome.storage.local)
+                }
+            }
+        };
+    }
+    
+    return null;
+})();
+
+let CHECK_URL_LOGO = '';
+let CHECK_URL_LOGO_SMALL = '';
+
 document.addEventListener('DOMContentLoaded', async function() {
     console.log('Popup loading...');
     const root = document.getElementById('root');
+    
+    if (!extensionAPI) {
+        console.error('Extension APIs unavailable');
+        root.innerHTML = `
+            <div style="padding: 20px; text-align: center;">
+                <p style="color: #dc2626;">Extension environment not supported.</p>
+            </div>
+        `;
+        return;
+    }
+    
+    CHECK_URL_LOGO = extensionAPI.runtime.getURL('icons/icon-32.png');
+    CHECK_URL_LOGO_SMALL = extensionAPI.runtime.getURL('icons/icon-24.png');
     
     // Show loading state immediately
     root.innerHTML = `
@@ -13,7 +86,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     
     try {
         // Get current tab URL
-        const tabs = await browser.tabs.query({ active: true, currentWindow: true });
+        const tabs = await extensionAPI.tabs.query({ active: true, currentWindow: true });
         console.log('Tabs:', tabs);
         
         const currentTab = tabs[0];
@@ -26,7 +99,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         console.log('Current URL:', currentUrl);
         
         // Get scan history and statistics
-        const storageData = await browser.storage.local.get(['scanHistory', 'statistics']);
+        const storageData = await extensionAPI.storage.local.get(['scanHistory', 'statistics']);
         console.log('Storage data:', storageData);
         
         const scanHistory = storageData.scanHistory || [];
@@ -40,7 +113,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         let currentScan = { status: 'safe', threats: [] };
         try {
             console.log('Sending analyzeUrl message...');
-            const response = await browser.runtime.sendMessage({
+            const response = await extensionAPI.runtime.sendMessage({
                 action: 'analyzeUrl',  // CRITICAL: This was missing in some versions
                 url: currentUrl
             });
@@ -59,7 +132,9 @@ document.addEventListener('DOMContentLoaded', async function() {
             <div class="extension-popup">
                 <div class="header">
                     <div class="title-section">
-                        <div class="icon">🛡️</div>
+                        <div class="icon">
+                            <img src="${CHECK_URL_LOGO}" alt="Check URL logo" class="logo-icon">
+                        </div>
                         <div class="title-text">
                             <h1>Check URL</h1>
                             <p>Real-time Link Protection</p>
@@ -142,7 +217,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 scanBtn.disabled = true;
                 
                 try {
-                    await browser.tabs.sendMessage(currentTab.id, { 
+                    await extensionAPI.tabs.sendMessage(currentTab.id, { 
                         action: 'scanCurrentPage' 
                     });
                     
@@ -161,7 +236,9 @@ document.addEventListener('DOMContentLoaded', async function() {
         console.error('Error loading popup:', error);
         root.innerHTML = `
             <div style="padding: 20px; text-align: center;">
-                <div style="font-size: 32px; margin-bottom: 12px;">🛡️</div>
+                <div style="font-size: 32px; margin-bottom: 12px;">
+                    <img src="${CHECK_URL_LOGO}" alt="Check URL logo" style="width: 48px; height: 48px;">
+                </div>
                 <h3 style="margin: 0 0 8px 0;">Check URL Scanner</h3>
                 <p style="color: #dc2626; margin: 8px 0;">Error loading extension</p>
                 <p style="font-size: 12px; color: #666; margin: 8px 0; word-break: break-word;">
@@ -208,12 +285,21 @@ function basicAnalyze(url) {
 }
 
 function getStatusIcon(status) {
+    const safeIcon = CHECK_URL_LOGO_SMALL
+        ? `<img src="${CHECK_URL_LOGO_SMALL}" alt="Check URL logo" class="status-icon-image">`
+        : '<span class="status-icon-placeholder">Safe</span>';
+    
     switch (status) {
-        case 'safe': return '🛡️';
-        case 'malicious': return '🚨';
-        case 'suspicious': return '⚠️';
-        case 'scanning': return '🔄';
-        default: return '🛡️';
+        case 'safe':
+            return safeIcon;
+        case 'malicious':
+            return '🚨';
+        case 'suspicious':
+            return '⚠️';
+        case 'scanning':
+            return '🔄';
+        default:
+            return safeIcon;
     }
 }
 
