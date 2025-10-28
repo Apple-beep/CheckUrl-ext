@@ -1,6 +1,11 @@
 //background.js handles the analysis, it runs the API calls and manages the whitelist
 const OPENAI_API_KEY = 'REPLACE WITH YOUR KEY'; // REPLACE WITH YOUR KEY
 const OPENAI_API_URL = 'https://api.openai.com/v1/chat/completions';
+const checkUrlConsoleLogoStyle = `font-size: 0; padding: 0 8px; background: url(${browser.runtime.getURL('icons/icon-16.png')}) no-repeat center/contain;`;
+
+function logWithLogo(message, ...args) {
+    console.log('%c   %s', checkUrlConsoleLogoStyle, message, ...args);
+}
 
 console.log('╔════════════════════════════════════════╗');
 console.log('║  CHECK URL BACKGROUND SCRIPT LOADING  ║');
@@ -121,7 +126,7 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
 //Queries the link with OpenAI
 async function analyzeUrlWithOpenAI(url) {
-    console.log('\n🤖 === OPENAI ANALYSIS START ===');
+    logWithLogo('\n=== OPENAI ANALYSIS START ===');
     console.log('URL:', url);
     
     try {
@@ -279,7 +284,7 @@ async function analyzeUrlWithOpenAI(url) {
         console.log('✅ OpenAI response parsed successfully');
         
         const aiResponse = data.choices[0].message.content;
-        console.log('🤖 AI Response:', aiResponse);
+        logWithLogo('AI Response:', aiResponse);
         
         let analysis;
         try {
@@ -313,7 +318,7 @@ async function analyzeUrlWithOpenAI(url) {
         };
         
         console.log('🎉 Analysis successful!');
-        console.log('=== OPENAI ANALYSIS END ===\n');
+        logWithLogo('=== OPENAI ANALYSIS END ===\n');
         
         return result;
 

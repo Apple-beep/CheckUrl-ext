@@ -1,4 +1,4 @@
-// Content script - compatible with OpenAI-powered analysis
+// Content script - compatible with CheckUrl analysis
 (function() {
     'use strict';
     
@@ -13,6 +13,7 @@
     
     const processedLinks = new Set();
     const analysisCache = new Map();
+    const checkUrlLogoHtml = `<img src="${browser.runtime.getURL('icons/icon-16.png')}" alt="CheckUrl logo" style="width: 1em; height: 1em; vertical-align: text-bottom; margin-right: 4px;">`;
     
     // Initialize
     loadSettingsAndInit();
@@ -64,7 +65,7 @@
                 <div class="checkurl-warning-text">
                     <strong>⚠️ Warning: This page may be dangerous</strong>
                     <br>${scanResult.reasoning || `Detected threats: ${scanResult.threats ? scanResult.threats.join(', ') : 'Suspicious content'}`}
-                    ${scanResult.aiPowered ? '<br><small>🤖 AI-powered analysis</small>' : ''}
+                    ${scanResult.aiPowered ? `<br><small>${checkUrlLogoHtml}CheckUrl analysis</small>` : ''}
                 </div>
                 <button class="checkurl-close-banner">×</button>
             </div>
@@ -106,7 +107,7 @@
             
             index += batchSize;
             if (index < links.length) {
-                setTimeout(processBatch, 1000); // 1 second delay between batches
+                setTimeout(processBatch, 10); // 1 second delay between batches
             }
         }
         
@@ -226,7 +227,7 @@
                             ${threats.map(threat => `<span class="threat-badge">${threat}</span>`).join('')}
                         </div>
                     ` : ''}
-                    ${scanResult.aiPowered ? '<p style="font-size: 11px; color: #666; margin-top: 8px;">🤖 AI-powered analysis</p>' : ''}
+                    ${scanResult.aiPowered ? `<p style="font-size: 11px; color: #666; margin-top: 8px;">${checkUrlLogoHtml}CheckUrl analysis</p>` : ''}
                 </div>
             </div>
         `;
@@ -287,7 +288,7 @@
                     <p style="margin: 8px 0; color: #374151;">
                         ${scanResult.reasoning || 'This link has been flagged as potentially ' + scanResult.status + '.'}
                     </p>
-                    ${scanResult.aiPowered ? '<p style="margin: 4px 0; font-size: 12px; color: #666;">🤖 AI-powered analysis</p>' : ''}
+                    ${scanResult.aiPowered ? `<p style="margin: 4px 0; font-size: 12px; color: #666;">${checkUrlLogoHtml}CheckUrl analysis</p>` : ''}
                 </div>
             </div>
             
@@ -326,12 +327,12 @@
             
             <div style="display: flex; gap: 12px; justify-content: flex-end;">
                 <button class="checkurl-stay-safe" style="
-                    padding: 8px 16px; background: #dc2626; color: white; border: none; 
-                    border-radius: 6px; cursor: pointer; font-weight: 500;
+                    padding: 8px 16px; background: #16a34a; color: white; border: none; 
+                    border-radius: 6px; cursor: pointer; font-weight: 500; box-shadow: 0 0 0 2px rgba(22, 163, 74, 0.2);
                 ">Stay Safe</button>
                 ${allowProceed || scanResult.status !== 'malicious' ? `
                     <button class="checkurl-proceed" style="
-                        padding: 8px 16px; background: transparent; color: #dc2626; 
+                        padding: 8px 16px; background: #fee2e2; color: #dc2626; 
                         border: 1px solid #dc2626; border-radius: 6px; cursor: pointer; font-weight: 500;
                     ">Proceed Anyway</button>
                 ` : ''}
