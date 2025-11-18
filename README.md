@@ -1,6 +1,6 @@
 # CheckUrl Extension - Real-time Malicious Link Scanner
 
-🛡️ **AI-powered browser extension that automatically scans and protects you from malicious links in real-time**
+🛡️ **CheckUrl browser extension that automatically scans and protects you from malicious links in real-time**
 
 ## Features
 
